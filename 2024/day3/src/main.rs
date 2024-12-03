@@ -10,37 +10,26 @@ fn read_input() -> Input {
 }
 
 fn parse_input(input: &str) -> Input {
-    let mut slices = Vec::default();
-
-    let enable_re = Regex::new(r"do\(\)|don't\(\)").unwrap();
-    let mut enable_captures = enable_re.captures_iter(input);
-    let mut last = enable_captures.next().unwrap();
-    slices.push((true, &input[0..last.get(0).unwrap().start()]));
-
-    while let Some(current) = enable_captures.next() {
-        slices.push((
-            is_enabled(last.get(0).unwrap().as_str()),
-            &input[last.get(0).unwrap().end()..current.get(0).unwrap().start()],
-        ));
-        last = current;
-    }
-    slices.push((
-        is_enabled(last.get(0).unwrap().as_str()),
-        &input[last.get(0).unwrap().end()..],
-    ));
+    let re = Regex::new(r"do\(\)|don't\(\)|mul\((\d{1,3}),(\d{1,3})\)").unwrap();
+    let captures = re.captures_iter(input);
+    let mut enabled = true;
 
     let mut res = Vec::default();
-    let mul_re = Regex::new(r"mul\((\d{1,3}),(\d{1,3})\)").unwrap();
-    for (enabled, slice) in slices {
-        let mul_captures = mul_re.captures_iter(slice);
-        for mul_capture in mul_captures {
-            let first = mul_capture.get(1).unwrap().as_str().parse().unwrap();
-            let second = mul_capture.get(2).unwrap().as_str().parse().unwrap();
+    for capture in captures {
+        if is_mul(&capture.get(0).unwrap().as_str()) {
+            let first = capture.get(1).unwrap().as_str().parse().unwrap();
+            let second = capture.get(2).unwrap().as_str().parse().unwrap();
             res.push((enabled, (first, second)));
+        } else {
+            enabled = is_enabled(&capture.get(0).unwrap().as_str());
         }
     }
 
     res
+}
+
+fn is_mul(capture: &str) -> bool {
+    &capture[..4] == "mul("
 }
 
 fn is_enabled(capture: &str) -> bool {
